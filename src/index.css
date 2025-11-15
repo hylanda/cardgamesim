@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  background: linear-gradient(to bottom right, rgb(15 23 42), rgb(30 41 59), rgb(15 23 42));
+  color: white;
+  min-height: 100vh;
+}
+
+.card {
+  position: relative;
+  background: linear-gradient(to bottom right, rgb(51 65 85), rgb(30 41 59));
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  border: 2px solid rgb(71 85 105);
+  cursor: grab;
+  transition: all 0.2s;
+}
+
+.card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+.card-dragging {
+  opacity: 0.5;
+}
+
+.zone {
+  border: 2px dashed rgb(71 85 105);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  min-height: 8rem;
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.zone-active {
+  border-color: rgb(59 130 246);
+  background: rgba(30 58 138, 0.2);
+}
