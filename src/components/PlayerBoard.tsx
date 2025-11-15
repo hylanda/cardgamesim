@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Zone } from './Zone';
+import { PileViewer } from './PileViewer';
 import { useGameStore } from '../store/gameStore';
-import type { Player } from '../types/card';
+import type { Player, ZoneType } from '../types/card';
 
 interface PlayerBoardProps {
   player: Player;
@@ -10,13 +12,44 @@ interface PlayerBoardProps {
 
 export function PlayerBoard({ player, isCurrentPlayer, isOpponent = false }: PlayerBoardProps) {
   const setSelectedCard = useGameStore((state) => state.setSelectedCard);
+  const [viewingPile, setViewingPile] = useState<ZoneType | null>(null);
 
   const handleCardClick = (card: any) => {
     setSelectedCard(card);
   };
 
-  // Only allow dragging for current player
+  const handlePileClick = (zoneType: ZoneType) => {
+    setViewingPile(zoneType);
+  };
+
+  const closePileViewer = () => {
+    setViewingPile(null);
+  };
+
+  // Only allow interaction for current player
   const canInteract = isCurrentPlayer;
+
+  // Get pile info for modal
+  const getPileInfo = () => {
+    if (!viewingPile) return null;
+
+    const zoneNames: Record<ZoneType, string> = {
+      deck: 'Deck',
+      hand: 'Hand',
+      playArea: 'Play Area',
+      discard: 'Discard Pile',
+      exile: 'Exile / Lost Zone',
+      prizes: 'Prizes',
+    };
+
+    return {
+      zoneName: zoneNames[viewingPile],
+      cards: player.zones[viewingPile],
+      hideCards: viewingPile === 'deck' && isOpponent,
+    };
+  };
+
+  const pileInfo = getPileInfo();
 
   return (
     <div className={`space-y-3 ${isOpponent ? 'opacity-90' : ''}`}>
@@ -30,20 +63,37 @@ export function PlayerBoard({ player, isCurrentPlayer, isOpponent = false }: Pla
         </div>
       </div>
 
-      {/* Top Row: Deck and Prizes */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Top Row: Deck and Prizes (as piles) */}
+      <div className="flex gap-3">
         <Zone
           id="deck"
           name="Deck"
           cards={player.zones.deck}
           hideCards={true}
+          isPile={true}
+          onPileClick={() => handlePileClick('deck')}
         />
         <Zone
           id="prizes"
           name="Prizes"
           cards={player.zones.prizes}
           maxCards={6}
-          onCardClick={canInteract ? handleCardClick : undefined}
+          isPile={true}
+          onPileClick={() => handlePileClick('prizes')}
+        />
+        <Zone
+          id="discard"
+          name="Discard"
+          cards={player.zones.discard}
+          isPile={true}
+          onPileClick={() => handlePileClick('discard')}
+        />
+        <Zone
+          id="exile"
+          name="Exile"
+          cards={player.zones.exile}
+          isPile={true}
+          onPileClick={() => handlePileClick('exile')}
         />
       </div>
 
@@ -65,21 +115,18 @@ export function PlayerBoard({ player, isCurrentPlayer, isOpponent = false }: Pla
         />
       )}
 
-      {/* Bottom Row: Discard and Exile */}
-      <div className="grid grid-cols-2 gap-3">
-        <Zone
-          id="discard"
-          name="Discard"
-          cards={player.zones.discard}
-          onCardClick={handleCardClick}
+      {/* Pile Viewer Modal */}
+      {viewingPile && pileInfo && (
+        <PileViewer
+          isOpen={true}
+          onClose={closePileViewer}
+          zoneName={pileInfo.zoneName}
+          zoneType={viewingPile}
+          cards={pileInfo.cards}
+          canInteract={canInteract}
+          hideCards={pileInfo.hideCards}
         />
-        <Zone
-          id="exile"
-          name="Exile"
-          cards={player.zones.exile}
-          onCardClick={handleCardClick}
-        />
-      </div>
+      )}
     </div>
   );
 }
