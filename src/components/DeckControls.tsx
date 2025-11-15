@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { socketService } from '../services/socket';
 import type { Card as CardType } from '../types/card';
 
 export function DeckControls() {
@@ -8,38 +9,36 @@ export function DeckControls() {
   const [searchResults, setSearchResults] = useState<CardType[]>([]);
   const [showSearch, setShowSearch] = useState(false);
 
-  const drawCards = useGameStore((state) => state.drawCards);
-  const shuffleDeck = useGameStore((state) => state.shuffleDeck);
-  const searchDeck = useGameStore((state) => state.searchDeck);
-  const moveCard = useGameStore((state) => state.moveCard);
-  const deckSize = useGameStore((state) => state.zones.deck.length);
+  const currentPlayer = useGameStore((state) => state.getCurrentPlayer());
+
+  const deckSize = currentPlayer?.zones.deck.length || 0;
 
   const handleDraw = () => {
     if (deckSize === 0) {
       alert('Deck is empty!');
       return;
     }
-    drawCards(Math.min(drawCount, deckSize));
+    socketService.drawCards(Math.min(drawCount, deckSize));
   };
 
   const handleShuffle = () => {
-    shuffleDeck();
+    socketService.shuffleDeck();
     alert('Deck shuffled!');
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!searchQuery.trim()) {
       alert('Please enter a search query');
       return;
     }
-    const results = searchDeck(searchQuery);
+    const results = await socketService.searchDeck(searchQuery);
     setSearchResults(results);
     setShowSearch(true);
   };
 
-  const handleAddToHand = (card: CardType) => {
-    moveCard(card.id, 'deck', 'hand');
-    setSearchResults(searchResults.filter((c) => c.id !== card.id));
+  const handleAddToHand = (cardId: string) => {
+    socketService.addToHandFromDeck(cardId);
+    setSearchResults(searchResults.filter((c) => c.id !== cardId));
     if (searchResults.length <= 1) {
       setShowSearch(false);
       setSearchQuery('');
@@ -120,7 +119,7 @@ export function DeckControls() {
                   >
                     <span className="text-sm text-white">{card.name}</span>
                     <button
-                      onClick={() => handleAddToHand(card)}
+                      onClick={() => handleAddToHand(card.id)}
                       className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs text-white transition-colors"
                     >
                       Add to Hand

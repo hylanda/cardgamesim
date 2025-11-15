@@ -63,3 +63,23 @@ export interface GameRoom {
   maxPlayers: 2;
   createdAt: number;
 }
+
+export interface ServerToClientEvents {
+  'game:state': (room: GameRoom) => void;
+  'game:action': (action: GameAction) => void;
+  'game:error': (error: string) => void;
+  'room:joined': (room: GameRoom, playerId: string) => void;
+  'player:joined': (player: Player) => void;
+  'player:left': (playerId: string) => void;
+}
+
+export interface ClientToServerEvents {
+  'room:create': (playerName: string, callback: (roomId: string) => void) => void;
+  'room:join': (roomId: string, playerName: string, callback: (success: boolean) => void) => void;
+  'card:move': (cardId: string, fromZone: ZoneType, toZone: ZoneType) => void;
+  'deck:draw': (count: number) => void;
+  'deck:shuffle': () => void;
+  'deck:search': (query: string, callback: (results: Card[]) => void) => void;
+  'card:import': (cards: Card[], zone: ZoneType) => void;
+  'card:addToHand': (cardId: string) => void;
+}

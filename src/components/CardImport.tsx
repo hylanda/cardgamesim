@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useGameStore } from '../store/gameStore';
 import { searchScryfallCards } from '../services/scryfall';
 import { searchPokemonCards } from '../services/pokemon';
+import { socketService } from '../services/socket';
 import type { Card as CardType, CardGame, ZoneType } from '../types/card';
 
 export function CardImport() {
@@ -10,8 +10,6 @@ export function CardImport() {
   const [searchResults, setSearchResults] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(false);
   const [targetZone, setTargetZone] = useState<ZoneType>('deck');
-
-  const importCards = useGameStore((state) => state.importCards);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -37,13 +35,13 @@ export function CardImport() {
   };
 
   const handleImportCard = (card: CardType) => {
-    importCards([card], targetZone);
+    socketService.importCards([card], targetZone);
     alert(`Imported ${card.name} to ${targetZone}`);
   };
 
   const handleImportAll = () => {
     if (searchResults.length === 0) return;
-    importCards(searchResults, targetZone);
+    socketService.importCards(searchResults, targetZone);
     alert(`Imported ${searchResults.length} cards to ${targetZone}`);
     setSearchResults([]);
     setSearchQuery('');
