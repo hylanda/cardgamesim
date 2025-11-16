@@ -14,11 +14,22 @@ interface ClientToServerEvents {
   'room:create': (playerName: string, callback: (roomId: string) => void) => void;
   'room:join': (roomId: string, playerName: string, callback: (success: boolean) => void) => void;
   'card:move': (cardId: string, fromZone: ZoneType, toZone: ZoneType) => void;
+  'card:tap': (instanceId: string) => void;
+  'card:untap': (instanceId: string) => void;
+  'card:toggleTap': (instanceId: string) => void;
+  'card:addCounter': (instanceId: string, counterType: string, amount: number) => void;
+  'card:removeCounter': (instanceId: string, counterType: string, amount: number) => void;
   'deck:draw': (count: number) => void;
   'deck:shuffle': () => void;
+  'deck:mulligan': () => void;
   'deck:search': (query: string, callback: (results: Card[]) => void) => void;
   'card:import': (cards: Card[], zone: ZoneType) => void;
   'card:addToHand': (cardId: string) => void;
+  'player:setLife': (life: number) => void;
+  'player:changeLife': (amount: number) => void;
+  'player:setPoison': (poison: number) => void;
+  'player:changePoison': (amount: number) => void;
+  'token:create': (token: Card) => void;
 }
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
@@ -82,6 +93,50 @@ export const socketService = {
 
   addToHandFromDeck: (cardId: string) => {
     socket.emit('card:addToHand', cardId);
+  },
+
+  toggleTap: (instanceId: string) => {
+    socket.emit('card:toggleTap', instanceId);
+  },
+
+  tap: (instanceId: string) => {
+    socket.emit('card:tap', instanceId);
+  },
+
+  untap: (instanceId: string) => {
+    socket.emit('card:untap', instanceId);
+  },
+
+  addCounter: (instanceId: string, counterType: string, amount: number = 1) => {
+    socket.emit('card:addCounter', instanceId, counterType, amount);
+  },
+
+  removeCounter: (instanceId: string, counterType: string, amount: number = 1) => {
+    socket.emit('card:removeCounter', instanceId, counterType, amount);
+  },
+
+  mulligan: () => {
+    socket.emit('deck:mulligan');
+  },
+
+  setLife: (life: number) => {
+    socket.emit('player:setLife', life);
+  },
+
+  changeLife: (amount: number) => {
+    socket.emit('player:changeLife', amount);
+  },
+
+  setPoison: (poison: number) => {
+    socket.emit('player:setPoison', poison);
+  },
+
+  changePoison: (amount: number) => {
+    socket.emit('player:changePoison', amount);
+  },
+
+  createToken: (token: Card) => {
+    socket.emit('token:create', token);
   },
 
   onGameState: (callback: (room: GameRoom) => void) => {

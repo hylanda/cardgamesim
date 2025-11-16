@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Zone } from './Zone';
 import { PileViewer } from './PileViewer';
+import { LifeCounter } from './LifeCounter';
 import { useGameStore } from '../store/gameStore';
 import type { Player, ZoneType } from '../types/card';
 
@@ -40,6 +41,7 @@ export function PlayerBoard({ player, isCurrentPlayer, isOpponent = false }: Pla
       discard: 'Discard Pile',
       exile: 'Exile / Lost Zone',
       prizes: 'Prizes',
+      sideboard: 'Sideboard',
     };
 
     return {
@@ -63,8 +65,11 @@ export function PlayerBoard({ player, isCurrentPlayer, isOpponent = false }: Pla
         </div>
       </div>
 
+      {/* Life and Poison Counters */}
+      <LifeCounter playerId={player.id} isCurrentPlayer={isCurrentPlayer} />
+
       {/* Top Row: Deck and Prizes (as piles) */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-wrap">
         <Zone
           id="deck"
           name="Deck"
@@ -95,6 +100,15 @@ export function PlayerBoard({ player, isCurrentPlayer, isOpponent = false }: Pla
           isPile={true}
           onPileClick={() => handlePileClick('exile')}
         />
+        {isCurrentPlayer && (
+          <Zone
+            id="sideboard"
+            name="Sideboard"
+            cards={player.zones.sideboard}
+            isPile={true}
+            onPileClick={() => handlePileClick('sideboard')}
+          />
+        )}
       </div>
 
       {/* Play Area - Larger */}

@@ -6,9 +6,12 @@ import { PlayerBoard } from './PlayerBoard';
 import { Card as CardComponent } from './Card';
 import { ActionLog } from './ActionLog';
 import { DeckControls } from './DeckControls';
+import { TokenCreator } from './TokenCreator';
+import { TurnPhase } from './TurnPhase';
 import { CardImport } from './CardImport';
 import { useGameStore } from '../store/gameStore';
 import { socketService } from '../services/socket';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import type { Card as CardType, ZoneType } from '../types/card';
 
 export function Game() {
@@ -23,6 +26,9 @@ export function Game() {
 
   const currentPlayer = getCurrentPlayer();
   const opponent = getOpponent();
+
+  // Enable keyboard shortcuts
+  useKeyboardShortcuts();
 
   useEffect(() => {
     // Listen for game state updates
@@ -100,6 +106,7 @@ export function Game() {
             <div className="lg:col-span-3 space-y-4">
               <CardImport />
               <DeckControls />
+              <TokenCreator />
             </div>
           )}
 
@@ -121,8 +128,9 @@ export function Game() {
             </div>
           </div>
 
-          {/* Right Sidebar - Action Log */}
-          <div className="lg:col-span-3">
+          {/* Right Sidebar - Turn Phase & Action Log */}
+          <div className="lg:col-span-3 space-y-4">
+            <TurnPhase />
             <ActionLog />
           </div>
         </div>

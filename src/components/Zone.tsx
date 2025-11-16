@@ -1,22 +1,40 @@
+import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Card } from './Card';
-import type { Card as CardType, ZoneType } from '../types/card';
+import { CardContextMenu } from './CardContextMenu';
+import type { Card as CardType, CardInstance, ZoneType } from '../types/card';
 
 interface ZoneProps {
   id: ZoneType;
   name: string;
-  cards: CardType[];
-  onCardClick?: (card: CardType) => void;
+  cards: CardType[] | CardInstance[];
+  onCardClick?: (card: CardType | CardInstance) => void;
   hideCards?: boolean;
   maxCards?: number;
   isPile?: boolean;
   onPileClick?: () => void;
 }
 
+function isCardInstance(card: CardType | CardInstance): card is CardInstance {
+  return 'instanceId' in card;
+}
+
 export function Zone({ id, name, cards, onCardClick, hideCards = false, maxCards, isPile = false, onPileClick }: ZoneProps) {
+  const [contextMenu, setContextMenu] = useState<{ card: CardInstance; x: number; y: number } | null>(null);
   const { setNodeRef, isOver } = useDroppable({
     id,
   });
+
+  const handleContextMenu = (e: React.MouseEvent, card: CardType | CardInstance) => {
+    if (id === 'playArea' && isCardInstance(card)) {
+      e.preventDefault();
+      setContextMenu({
+        card,
+        x: e.clientX,
+        y: e.clientY,
+      });
+    }
+  };
 
   // Pile view (card-sized, clickable)
   if (isPile) {
@@ -97,11 +115,22 @@ export function Zone({ id, name, cards, onCardClick, hideCards = false, maxCards
         ) : (
           <div className={`flex flex-wrap gap-2 ${id === 'hand' ? 'justify-start' : ''}`}>
             {cards.map((card) => (
-              <Card key={card.id} card={card} onClick={onCardClick} />
+              <div key={isCardInstance(card) ? card.instanceId : card.id} onContextMenu={(e) => handleContextMenu(e, card)}>
+                <Card card={card} onClick={onCardClick} />
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <CardContextMenu
+          card={contextMenu.card}
+          position={{ x: contextMenu.x, y: contextMenu.y }}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }

@@ -25,15 +25,27 @@ export interface Card {
   number?: string;
 }
 
-export type ZoneType = 'deck' | 'hand' | 'playArea' | 'discard' | 'exile' | 'prizes';
+export type ZoneType = 'deck' | 'hand' | 'playArea' | 'discard' | 'exile' | 'prizes' | 'sideboard';
+
+export interface CardInstance extends Card {
+  instanceId: string;
+  tapped: boolean;
+  counters: Record<string, number>; // e.g., { '+1/+1': 2, '-1/-1': 1, 'loyalty': 4 }
+}
 
 export interface PlayerZones {
   deck: Card[];
   hand: Card[];
-  playArea: Card[];
+  playArea: CardInstance[];
   discard: Card[];
   exile: Card[];
   prizes: Card[];
+  sideboard: Card[];
+}
+
+export interface PlayerState {
+  life: number;
+  poison: number;
 }
 
 export interface Player {
@@ -41,6 +53,7 @@ export interface Player {
   socketId: string;
   name: string;
   zones: PlayerZones;
+  state: PlayerState;
 }
 
 export interface GameAction {

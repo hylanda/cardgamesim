@@ -21,6 +21,12 @@ export function DeckControls() {
     socketService.shuffleDeck();
   };
 
+  const handleMulligan = () => {
+    if (window.confirm('Take a mulligan? This will shuffle your hand back into your deck and draw 7 new cards.')) {
+      socketService.mulligan();
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-bold text-slate-200">Quick Actions</h3>
@@ -58,8 +64,19 @@ export function DeckControls() {
         </button>
       </div>
 
+      {/* Mulligan */}
+      <div className="zone">
+        <button
+          onClick={handleMulligan}
+          disabled={deckSize === 0}
+          className="w-full px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded text-white font-medium transition-colors"
+        >
+          Mulligan
+        </button>
+      </div>
+
       <p className="text-xs text-slate-500 italic">
-        Tip: Click on your deck pile to search for specific cards
+        Tip: Click on your deck pile to search for specific cards. Double-click cards to tap/untap. Right-click cards in play to add counters.
       </p>
     </div>
   );

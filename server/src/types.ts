@@ -25,15 +25,27 @@ export interface Card {
   number?: string;
 }
 
-export type ZoneType = 'deck' | 'hand' | 'playArea' | 'discard' | 'exile' | 'prizes';
+export type ZoneType = 'deck' | 'hand' | 'playArea' | 'discard' | 'exile' | 'prizes' | 'sideboard';
+
+export interface CardInstance extends Card {
+  instanceId: string;
+  tapped: boolean;
+  counters: Record<string, number>;
+}
 
 export interface PlayerZones {
   deck: Card[];
   hand: Card[];
-  playArea: Card[];
+  playArea: CardInstance[];
   discard: Card[];
   exile: Card[];
   prizes: Card[];
+  sideboard: Card[];
+}
+
+export interface PlayerState {
+  life: number;
+  poison: number;
 }
 
 export interface Player {
@@ -41,6 +53,7 @@ export interface Player {
   socketId: string;
   name: string;
   zones: PlayerZones;
+  state: PlayerState;
 }
 
 export interface GameAction {
@@ -77,9 +90,20 @@ export interface ClientToServerEvents {
   'room:create': (playerName: string, callback: (roomId: string) => void) => void;
   'room:join': (roomId: string, playerName: string, callback: (success: boolean) => void) => void;
   'card:move': (cardId: string, fromZone: ZoneType, toZone: ZoneType) => void;
+  'card:tap': (instanceId: string) => void;
+  'card:untap': (instanceId: string) => void;
+  'card:toggleTap': (instanceId: string) => void;
+  'card:addCounter': (instanceId: string, counterType: string, amount: number) => void;
+  'card:removeCounter': (instanceId: string, counterType: string, amount: number) => void;
   'deck:draw': (count: number) => void;
   'deck:shuffle': () => void;
+  'deck:mulligan': () => void;
   'deck:search': (query: string, callback: (results: Card[]) => void) => void;
   'card:import': (cards: Card[], zone: ZoneType) => void;
   'card:addToHand': (cardId: string) => void;
+  'player:setLife': (life: number) => void;
+  'player:changeLife': (amount: number) => void;
+  'player:setPoison': (poison: number) => void;
+  'player:changePoison': (amount: number) => void;
+  'token:create': (token: Card) => void;
 }

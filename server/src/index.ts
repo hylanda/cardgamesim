@@ -132,6 +132,105 @@ io.on('connection', (socket) => {
     io.to(room.id).emit('game:state', room);
   });
 
+  socket.on('card:toggleTap', (instanceId) => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.toggleTap(room.id, player.id, instanceId);
+    io.to(room.id).emit('game:state', room);
+  });
+
+  socket.on('card:tap', (instanceId) => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.tap(room.id, player.id, instanceId);
+    io.to(room.id).emit('game:state', room);
+  });
+
+  socket.on('card:untap', (instanceId) => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.untap(room.id, player.id, instanceId);
+    io.to(room.id).emit('game:state', room);
+  });
+
+  socket.on('card:addCounter', (instanceId, counterType, amount) => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.addCounter(room.id, player.id, instanceId, counterType, amount);
+    io.to(room.id).emit('game:state', room);
+  });
+
+  socket.on('card:removeCounter', (instanceId, counterType, amount) => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.removeCounter(room.id, player.id, instanceId, counterType, amount);
+    io.to(room.id).emit('game:state', room);
+  });
+
+  socket.on('player:setLife', (life) => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.setLife(room.id, player.id, life);
+    io.to(room.id).emit('game:state', room);
+  });
+
+  socket.on('player:changeLife', (amount) => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.changeLife(room.id, player.id, amount);
+    io.to(room.id).emit('game:state', room);
+  });
+
+  socket.on('player:setPoison', (poison) => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.setPoison(room.id, player.id, poison);
+    io.to(room.id).emit('game:state', room);
+  });
+
+  socket.on('player:changePoison', (amount) => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.changePoison(room.id, player.id, amount);
+    io.to(room.id).emit('game:state', room);
+  });
+
+  socket.on('deck:mulligan', () => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.mulligan(room.id, player.id);
+    io.to(room.id).emit('game:state', room);
+  });
+
+  socket.on('token:create', (token) => {
+    const result = gameManager.getPlayerBySocketId(socket.id);
+    if (!result) return;
+
+    const { room, player } = result;
+    gameManager.createToken(room.id, player.id, token);
+    io.to(room.id).emit('game:state', room);
+  });
+
   socket.on('disconnect', () => {
     const result = gameManager.removePlayer(socket.id);
     if (result) {
