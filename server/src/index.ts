@@ -3,7 +3,13 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { GameManager } from './GameManager';
+import { initializeDatabase } from './database/db';
+import authRoutes from './routes/auth';
+import deckRoutes from './routes/decks';
 import type { ServerToClientEvents, ClientToServerEvents } from './types';
+
+// Initialize database
+initializeDatabase();
 
 const app = express();
 const httpServer = createServer(app);
@@ -19,10 +25,13 @@ const gameManager = new GameManager();
 app.use(cors());
 app.use(express.json());
 
-// Health check endpoint
+// API routes
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+app.use('/api/auth', authRoutes);
+app.use('/api/decks', deckRoutes);
 
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);

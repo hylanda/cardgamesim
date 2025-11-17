@@ -1,7 +1,11 @@
 import { Card, GameRoom, Player, PlayerZones, GameAction, ZoneType } from './types';
+import { gameSessionRepository } from './database/repositories/GameSessionRepository';
+import { gameStateSnapshotRepository } from './database/repositories/GameStateSnapshotRepository';
 
 export class GameManager {
   private rooms: Map<string, GameRoom> = new Map();
+  private sessionIds: Map<string, string> = new Map(); // roomId -> sessionId
+  private actionCounts: Map<string, number> = new Map(); // roomId -> action count
 
   createRoom(playerId: string, socketId: string, playerName: string): string {
     const roomId = this.generateRoomId();
@@ -26,6 +30,19 @@ export class GameManager {
     };
 
     this.rooms.set(roomId, room);
+    this.actionCounts.set(roomId, 0);
+
+    // Create database session
+    try {
+      const session = gameSessionRepository.create({
+        room_id: roomId,
+        player1_id: playerId,
+      });
+      this.sessionIds.set(roomId, session.id);
+    } catch (error) {
+      console.error('Failed to create game session in database:', error);
+    }
+
     return roomId;
   }
 
@@ -46,6 +63,17 @@ export class GameManager {
     };
 
     room.players.push(player);
+
+    // Update database session with second player
+    const sessionId = this.sessionIds.get(roomId);
+    if (sessionId) {
+      try {
+        gameSessionRepository.addPlayer2(sessionId, playerId);
+      } catch (error) {
+        console.error('Failed to update game session with player 2:', error);
+      }
+    }
+
     return player;
   }
 
@@ -97,26 +125,26 @@ export class GameManager {
     const card = player.zones[fromZone].find((c: any) => c.id === cardId);
     if (!card) return false;
 
-    // Remove from source zone
-    player.zones[fromZone] = player.zones[fromZone].filter((c: any) => c.id !== cardId);
+    // Remove from source zone (type assertion needed because of union types)
+    (player.zones[fromZone] as any[]) = player.zones[fromZone].filter((c: any) => c.id !== cardId);
 
     // Add to destination zone
     if (toZone === 'playArea') {
       // Convert to CardInstance if moving to play area
-      const cardInstance = {
-        ...card,
-        instanceId: card.instanceId || `instance-${Date.now()}-${Math.random()}`,
-        tapped: card.tapped || false,
-        counters: card.counters || {},
+      const cardInstance: any = {
+        ...(card as any),
+        instanceId: (card as any).instanceId || `instance-${Date.now()}-${Math.random()}`,
+        tapped: (card as any).tapped || false,
+        counters: (card as any).counters || {},
       };
       player.zones[toZone].push(cardInstance);
     } else {
       // Strip instance properties if moving out of play area
       if (fromZone === 'playArea') {
         const { instanceId, tapped, counters, ...baseCard } = card as any;
-        player.zones[toZone].push(baseCard);
+        (player.zones[toZone] as any[]).push(baseCard);
       } else {
-        player.zones[toZone].push(card);
+        (player.zones[toZone] as any[]).push(card);
       }
     }
 
@@ -203,7 +231,18 @@ export class GameManager {
     const player = room.players.find(p => p.id === playerId);
     if (!player) return false;
 
-    player.zones[zone].push(...cards);
+    if (zone === 'playArea') {
+      // Convert to CardInstances if importing to play area
+      const cardInstances = cards.map(card => ({
+        ...card,
+        instanceId: `instance-${Date.now()}-${Math.random()}`,
+        tapped: false,
+        counters: {},
+      }));
+      player.zones[zone].push(...cardInstances);
+    } else {
+      (player.zones[zone] as any[]).push(...cards);
+    }
 
     this.addAction(room, {
       playerId: player.id,
@@ -437,6 +476,55 @@ export class GameManager {
       timestamp: Date.now(),
     };
     room.actions.push(action);
+
+    // Increment action count and auto-save every 10 actions
+    const roomId = room.id;
+    const currentCount = (this.actionCounts.get(roomId) || 0) + 1;
+    this.actionCounts.set(roomId, currentCount);
+
+    if (currentCount % 10 === 0) {
+      this.autoSaveGameState(roomId);
+    }
+  }
+
+  private autoSaveGameState(roomId: string) {
+    const room = this.rooms.get(roomId);
+    const sessionId = this.sessionIds.get(roomId);
+    const actionCount = this.actionCounts.get(roomId);
+
+    if (!room || !sessionId || actionCount === undefined) {
+      return;
+    }
+
+    try {
+      gameStateSnapshotRepository.create(sessionId, actionCount, room);
+      console.log(`Auto-saved game state for room ${roomId} at action ${actionCount}`);
+
+      // Prune old snapshots to keep only last 50
+      gameStateSnapshotRepository.pruneOldSnapshots(sessionId, 50);
+    } catch (error) {
+      console.error('Failed to auto-save game state:', error);
+    }
+  }
+
+  // Load game state from database
+  loadGameState(roomId: string): GameRoom | null {
+    const sessionId = this.sessionIds.get(roomId);
+    if (!sessionId) return null;
+
+    try {
+      const snapshot = gameStateSnapshotRepository.findLatestBySessionId(sessionId);
+      if (!snapshot) return null;
+
+      const room = snapshot.state_data;
+      this.rooms.set(roomId, room);
+      this.actionCounts.set(roomId, snapshot.action_count);
+
+      return room;
+    } catch (error) {
+      console.error('Failed to load game state:', error);
+      return null;
+    }
   }
 
   private createEmptyZones(): PlayerZones {

@@ -76,23 +76,37 @@ export function GameBoard({ player, opponent, onPileClick, onCardClick }: GameBo
 
       {/* CENTER - Play Areas */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Opponent Play Area (40%) */}
+        {/* Opponent Section */}
         {opponent && (
-          <div className="h-[40%] border-b-2 border-dashed border-slate-600 p-2 bg-slate-800/30">
-            <div className="h-full flex flex-col">
-              <div className="text-sm font-bold text-slate-300 mb-1">{opponent.name}'s Board</div>
+          <>
+            {/* Opponent Hand (concealed) - 10% */}
+            <div className="h-[10%] p-2 bg-slate-900/30 border-b border-slate-700">
               <Zone
-                id="playArea"
-                name=""
-                cards={opponent.zones.playArea}
+                id="hand"
+                name={`${opponent.name}'s Hand`}
+                cards={opponent.zones.hand}
+                hideCards={true}
                 onCardClick={onCardClick}
               />
             </div>
-          </div>
+
+            {/* Opponent Play Area - 45% */}
+            <div className="h-[45%] p-2 bg-slate-800/30">
+              <div className="h-full flex flex-col">
+                <div className="text-sm font-bold text-slate-300 mb-1">{opponent.name}'s Board</div>
+                <Zone
+                  id="playArea"
+                  name=""
+                  cards={opponent.zones.playArea}
+                  onCardClick={onCardClick}
+                />
+              </div>
+            </div>
+          </>
         )}
 
-        {/* Player Play Area (40%) */}
-        <div className={`${opponent ? 'h-[40%]' : 'h-[60%]'} p-2 bg-slate-800/50`}>
+        {/* Player Play Area - 45% */}
+        <div className={`${opponent ? 'h-[45%]' : 'h-[70%]'} p-2 bg-slate-800/50`}>
           <div className="h-full flex flex-col">
             <div className="text-sm font-bold text-blue-400 mb-1">Your Board</div>
             <Zone
@@ -104,8 +118,8 @@ export function GameBoard({ player, opponent, onPileClick, onCardClick }: GameBo
           </div>
         </div>
 
-        {/* Player Hand (20%) */}
-        <div className="h-[20%] border-t-2 border-blue-500/30 p-2 bg-slate-900/50">
+        {/* Player Hand - 15% */}
+        <div className={`${opponent ? 'h-[15%]' : 'h-[30%]'} border-t-2 border-blue-500/30 p-2 bg-slate-900/50`}>
           <Zone
             id="hand"
             name="Your Hand"
