@@ -281,32 +281,59 @@ npx gh-pages -d dist
 
 Modern browsers with WebSocket support required.
 
+## NEW Features (Latest Update)
+
+### Database Persistence
+- **SQLite database** - Persistent storage with easy PostgreSQL migration path
+- **User accounts** - Register and login with bcrypt password hashing
+- **Deck management** - Save and load decks with mainboard + sideboard
+- **Session state** - Auto-save game state every 10 actions
+- **Game history** - Track all game sessions with player info
+
+### Game Features
+- **Life/Poison counters** - Track life totals and poison counters
+- **Tap/Untap cards** - Double-click or right-click to tap/untap
+- **Card counters** - +1/+1, -1/-1, loyalty, charge, poison, shield, energy, damage
+- **Token creation** - Create common tokens or custom tokens
+- **Mulligan** - Shuffle hand back and draw 7 new cards
+- **Sideboard** - Full sideboard support for deck building
+- **Turn phases** - Visual turn phase tracker
+- **Keyboard shortcuts** - Space/D (draw), S (shuffle), M (mulligan), ? (help)
+- **Improved UI** - Fit-to-screen layout with bigger play areas
+
+### API Endpoints
+```
+POST /api/auth/register - Create user account
+POST /api/auth/login - Authenticate user
+GET /api/auth/profile/:userId - Get user profile
+
+GET /api/decks/user/:userId - List all decks
+GET /api/decks/:deckId - Get specific deck
+POST /api/decks - Create new deck
+PUT /api/decks/:deckId - Update deck
+DELETE /api/decks/:deckId - Delete deck
+```
+
 ## Known Limitations
 
-- Maximum 2 players per game
-- No persistence (games reset on server restart)
-- No authentication/accounts
+- Maximum 2 players per game (4-player support planned)
 - No spectator mode
-- No card rules enforcement
+- No card rules enforcement (manual gameplay)
 - Limited to public API card data
 
 ## Future Enhancements
 
-- [ ] Persistent game state (database)
-- [ ] User accounts and authentication
-- [ ] Game history and replays
+- [ ] PostgreSQL migration for production
+- [ ] Game replay viewer
 - [ ] Spectator mode
 - [ ] 3-4 player support
-- [ ] Tournament mode
-- [ ] Custom card creation
-- [ ] Card rules engine
+- [ ] Tournament mode with brackets
 - [ ] Voice/video chat integration
 - [ ] Mobile app (React Native)
-- [ ] Deck building interface
-- [ ] Export deck lists
-- [ ] Counter and token management
-- [ ] Life/damage tracking
+- [ ] Advanced deck builder with stats
+- [ ] Card rules automation engine
 - [ ] Timer/chess clock
+- [ ] Matchmaking system
 
 ## Troubleshooting
 
