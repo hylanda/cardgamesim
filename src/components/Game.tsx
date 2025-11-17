@@ -1,14 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { useState } from 'react';
-import { PlayerBoard } from './PlayerBoard';
+import { GameBoard } from './GameBoard';
 import { Card as CardComponent } from './Card';
 import { ActionLog } from './ActionLog';
 import { DeckControls } from './DeckControls';
 import { TokenCreator } from './TokenCreator';
 import { TurnPhase } from './TurnPhase';
 import { CardImport } from './CardImport';
+import { PileViewer } from './PileViewer';
 import { useGameStore } from '../store/gameStore';
 import { socketService } from '../services/socket';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -18,11 +18,12 @@ export function Game() {
   const room = useGameStore((state) => state.room);
   const getCurrentPlayer = useGameStore((state) => state.getCurrentPlayer);
   const getOpponent = useGameStore((state) => state.getOpponent);
-  const showMenu = useGameStore((state) => state.showMenu);
-  const toggleMenu = useGameStore((state) => state.toggleMenu);
   const setRoom = useGameStore((state) => state.setRoom);
+  const setSelectedCard = useGameStore((state) => state.setSelectedCard);
 
   const [activeCard, setActiveCard] = useState<CardType | null>(null);
+  const [viewingPile, setViewingPile] = useState<{ zoneType: ZoneType; playerId: string } | null>(null);
+  const [showSidebar, setShowSidebar] = useState<'menu' | 'info' | null>(null);
 
   const currentPlayer = getCurrentPlayer();
   const opponent = getOpponent();
@@ -71,69 +72,159 @@ export function Game() {
     }
   };
 
+  const handlePileClick = (zoneType: ZoneType, playerId: string) => {
+    setViewingPile({ zoneType, playerId });
+  };
+
+  const handleCardClick = (card: any) => {
+    setSelectedCard(card);
+  };
+
+  const closePileViewer = () => {
+    setViewingPile(null);
+  };
+
   if (!room || !currentPlayer) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="h-screen flex items-center justify-center">
         <div className="text-white">Loading game...</div>
       </div>
     );
   }
 
+  const pileInfo = viewingPile ? (() => {
+    const player = room.players.find(p => p.id === viewingPile.playerId);
+    if (!player) return null;
+
+    const zoneNames: Record<ZoneType, string> = {
+      deck: 'Deck',
+      hand: 'Hand',
+      playArea: 'Play Area',
+      discard: 'Discard Pile',
+      exile: 'Exile / Lost Zone',
+      prizes: 'Prizes',
+      sideboard: 'Sideboard',
+    };
+
+    return {
+      zoneName: zoneNames[viewingPile.zoneType],
+      cards: player.zones[viewingPile.zoneType],
+      hideCards: viewingPile.zoneType === 'deck' && viewingPile.playerId !== currentPlayer.id,
+      canInteract: viewingPile.playerId === currentPlayer.id,
+    };
+  })() : null;
+
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="min-h-screen p-4">
-        {/* Header with Room Info and Menu Toggle */}
-        <header className="mb-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+      <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
+        {/* Compact Header */}
+        <header className="h-12 flex items-center justify-between px-4 bg-slate-800 border-b border-slate-700 flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
               Card Game Simulator
             </h1>
-            <p className="text-slate-400 text-sm mt-1">
-              Room: <code className="bg-slate-700 px-2 py-1 rounded">{room.id}</code>
-            </p>
+            <span className="text-xs text-slate-400">
+              Room: <code className="bg-slate-700 px-2 py-0.5 rounded">{room.id}</code>
+            </span>
           </div>
-          <button
-            onClick={toggleMenu}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded text-white font-medium transition-colors"
-          >
-            {showMenu ? 'Hide Menu' : 'Show Menu'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowSidebar(showSidebar === 'menu' ? null : 'menu')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                showSidebar === 'menu'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              Menu
+            </button>
+            <button
+              onClick={() => setShowSidebar(showSidebar === 'info' ? null : 'info')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                showSidebar === 'info'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              Info
+            </button>
+            <button
+              onClick={() => alert('Press ? for keyboard shortcuts')}
+              className="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm text-slate-300"
+              title="Keyboard Shortcuts"
+            >
+              ?
+            </button>
+          </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Left Sidebar - Menu (collapsible) */}
-          {showMenu && (
-            <div className="lg:col-span-3 space-y-4">
-              <CardImport />
-              <DeckControls />
-              <TokenCreator />
-            </div>
-          )}
+        {/* Main Game Area */}
+        <div className="flex-1 flex min-h-0 relative">
+          {/* Game Board */}
+          <div className="flex-1 min-w-0">
+            <GameBoard
+              player={currentPlayer}
+              opponent={opponent}
+              isCurrentPlayer={true}
+              onPileClick={handlePileClick}
+              onCardClick={handleCardClick}
+            />
+          </div>
 
-          {/* Main Game Area */}
-          <div className={`${showMenu ? 'lg:col-span-6' : 'lg:col-span-9'} space-y-6`}>
-            {/* Opponent Board */}
-            {opponent && (
-              <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700">
-                <PlayerBoard player={opponent} isCurrentPlayer={false} isOpponent={true} />
+          {/* Overlay Sidebars */}
+          {showSidebar && (
+            <>
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0 bg-black/50 z-40"
+                onClick={() => setShowSidebar(null)}
+              />
+
+              {/* Sidebar Panel */}
+              <div className="absolute top-0 right-0 bottom-0 w-80 bg-slate-800 border-l border-slate-700 z-50 overflow-y-auto shadow-2xl">
+                <div className="p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-slate-200">
+                      {showSidebar === 'menu' ? 'Menu' : 'Game Info'}
+                    </h2>
+                    <button
+                      onClick={() => setShowSidebar(null)}
+                      className="text-slate-400 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {showSidebar === 'menu' ? (
+                    <>
+                      <CardImport />
+                      <DeckControls />
+                      <TokenCreator />
+                    </>
+                  ) : (
+                    <>
+                      <TurnPhase />
+                      <ActionLog />
+                    </>
+                  )}
+                </div>
               </div>
-            )}
-
-            {/* Divider */}
-            <div className="border-t-2 border-dashed border-slate-600"></div>
-
-            {/* Current Player Board */}
-            <div className="bg-slate-800/50 rounded-lg p-4 border-2 border-blue-500/30">
-              <PlayerBoard player={currentPlayer} isCurrentPlayer={true} />
-            </div>
-          </div>
-
-          {/* Right Sidebar - Turn Phase & Action Log */}
-          <div className="lg:col-span-3 space-y-4">
-            <TurnPhase />
-            <ActionLog />
-          </div>
+            </>
+          )}
         </div>
+
+        {/* Pile Viewer Modal */}
+        {viewingPile && pileInfo && (
+          <PileViewer
+            isOpen={true}
+            onClose={closePileViewer}
+            zoneName={pileInfo.zoneName}
+            zoneType={viewingPile.zoneType}
+            cards={pileInfo.cards}
+            canInteract={pileInfo.canInteract}
+            hideCards={pileInfo.hideCards}
+          />
+        )}
       </div>
 
       {/* Drag Overlay */}
