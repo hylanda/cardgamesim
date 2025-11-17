@@ -1,7 +1,20 @@
 import Database from 'better-sqlite3';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { mkdirSync } from 'fs';
 
-const db = new Database(join(__dirname, '../../data/cardgame.db'));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Ensure data directory exists
+const dataDir = join(__dirname, '../../../data');
+try {
+  mkdirSync(dataDir, { recursive: true });
+} catch (error) {
+  // Directory already exists, ignore
+}
+
+const db = new Database(join(dataDir, 'cardgame.db'));
 
 // Enable foreign keys
 db.pragma('foreign_keys = ON');
